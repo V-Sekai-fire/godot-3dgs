@@ -1,0 +1,29 @@
+# Godot-specific ignores
+.import/
+*.import
+
+# Godot 4+ specific
+.godot/
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+bin/
+obj/
+
+# Logs
+*.log
+
+# Editor-specific
+.vscode/
+.idea/
+
+# Export presets (uncomment if you want to ignore)
+# export_presets.cfg
