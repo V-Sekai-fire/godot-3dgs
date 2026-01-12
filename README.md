@@ -2,6 +2,8 @@
 
 This project implements initial support for KHR_gaussian_splatting extension in Godot Engine.
 
+https://github.com/KhronosGroup/glTF/pull/2490
+
  - [x] Successfully packed degree 3 Spherical Harmonics into the Godot Engine vertex attributes
  - [ ] Debugging color reproduction
  - [ ] Hard coded focal length calculation
