@@ -1,4 +1,4 @@
-extends Node3D
+extends Node
 class_name GaussianSplatNode
 
 @export var kernel: String = "ellipse"
@@ -14,7 +14,7 @@ var sh_coefficients: Array  # Array of arrays of PackedVector3Array
 var splat_instances: Array
 
 func _ready():
-	setup_splats()
+	pass
 
 func setup_splats():
 	for i in range(positions.size()):
@@ -23,9 +23,9 @@ func setup_splats():
 		mesh_instance.mesh = mesh
 		
 		var material = ShaderMaterial.new()
-		material.shader = load("res://addons/gaussian_splats/core/gaussian_splat.gdshader")
+		material.shader = load("res://thirdparty/godot_gaussian_splatting/addons/gaussian_splats/core/gaussian_splat.gdshader")
 		if material.shader == null:
-			print("Failed to load shader from res://addons/gaussian_splats/core/gaussian_splat.gdshader")
+			print("Failed to load shader from res://thirdparty/godot_gaussian_splatting/addons/gaussian_splats/core/gaussian_splat.gdshader")
 		material.set_shader_parameter("scale", scales[i])
 		material.set_shader_parameter("opacity", opacities[i])
 		if sh_coefficients.size() > 0 and sh_coefficients[0].size() > i:

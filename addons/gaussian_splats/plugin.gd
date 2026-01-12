@@ -9,7 +9,6 @@ func _enter_tree():
 	GLTFDocument.register_gltf_document_extension(gaussian_extension)
 
 func _exit_tree():
-	# Plugin disabled - unregister extension
 	if gaussian_extension:
 		GLTFDocument.unregister_gltf_document_extension(gaussian_extension)
 		gaussian_extension = null
