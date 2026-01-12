@@ -95,19 +95,62 @@ func vec4array_quat_to_float32_tangent_quads(rotations: PackedVector4Array) -> P
 			result.append(d)
 	return result
 
-func vec4array_to_pair_uv_quads(array: PackedVector4Array) -> Array[PackedVector2Array]:
-	var uv := PackedVector2Array()
-	var uv2 := PackedVector2Array()
+func vec4array_to_vec2_uv_quads(array: PackedVector4Array, take_nth_component: PackedVector4Array, comp: int) -> PackedVector2Array:
+	var uv_bytes := PackedByteArray()
+	uv_bytes.resize(len(array) * 8 * 4)
+	var basei: int = 0
+	var j: int = 0
 	for vec4 in array:
-		uv.append(Vector2(vec4.x, vec4.y))
-		uv2.append(Vector2(vec4.z, vec4.w)) # FIXME: scale.w unused
-		uv.append(Vector2(vec4.x, vec4.y))
-		uv2.append(Vector2(vec4.z, vec4.w)) # FIXME: scale.w unused
-		uv.append(Vector2(vec4.x, vec4.y))
-		uv2.append(Vector2(vec4.z, vec4.w)) # FIXME: scale.w unused
-		uv.append(Vector2(vec4.x, vec4.y))
-		uv2.append(Vector2(vec4.z, vec4.w)) # FIXME: scale.w unused
-	return [uv, uv2]
+		var extra: float = take_nth_component[j][comp]
+		for i in range(basei, basei + 32, 8):
+			uv_bytes.encode_half(i, vec4.x)
+			uv_bytes.encode_half(i + 2, vec4.y)
+			uv_bytes.encode_half(i + 4, vec4.z)
+			uv_bytes.encode_half(i + 6, extra)
+		basei += 32
+		j += 1
+	return uv_bytes.to_vector2_array()
+
+func vec4array_pairs_to_half8_custom_quads(array1: PackedVector4Array, array2: PackedVector4Array, take_01th_component: PackedVector4Array) -> PackedByteArray:
+	var uv_bytes := PackedByteArray()
+	uv_bytes.resize(len(array1) * 16 * 4)
+	var basei: int = 0
+	for j in range(len(array1)):
+		var extra: Vector4 = take_01th_component[j]
+		var v1: Vector4 = array1[j]
+		var v2: Vector4 = array2[j]
+		for i in range(basei, basei + 64, 16):
+			uv_bytes.encode_half(i, v1.x)
+			uv_bytes.encode_half(i + 2, v1.y)
+			uv_bytes.encode_half(i + 4, v1.z)
+			uv_bytes.encode_half(i + 6, v2.x)
+			uv_bytes.encode_half(i + 8, v2.y)
+			uv_bytes.encode_half(i + 10, v2.z)
+			uv_bytes.encode_half(i + 12, extra.x)
+			uv_bytes.encode_half(i + 14, extra.y)
+		basei += 64
+	return uv_bytes
+
+func vec4array_pairs_2nd_to_half8_custom_quads(array1: PackedVector4Array, array2: PackedVector4Array, take_2nd_component1: PackedVector4Array, take_2nd_component2: PackedVector4Array) -> PackedByteArray:
+	var uv_bytes := PackedByteArray()
+	uv_bytes.resize(len(array1) * 16 * 4)
+	var basei: int = 0
+	for j in range(len(array1)):
+		var extra1: Vector4 = take_2nd_component1[j]
+		var extra2: Vector4 = take_2nd_component2[j]
+		var v1: Vector4 = array1[j]
+		var v2: Vector4 = array2[j]
+		for i in range(basei, basei + 64, 16):
+			uv_bytes.encode_half(i, v1.x)
+			uv_bytes.encode_half(i + 2, v1.y)
+			uv_bytes.encode_half(i + 4, v1.z)
+			uv_bytes.encode_half(i + 6, v2.x)
+			uv_bytes.encode_half(i + 8, v2.y)
+			uv_bytes.encode_half(i + 10, v2.z)
+			uv_bytes.encode_half(i + 12, extra1.z)
+			uv_bytes.encode_half(i + 14, extra2.z)
+		basei += 64
+	return uv_bytes
 
 func add_gaussian_surface(import_mesh: ImporterMesh, material: ShaderMaterial, gaussian_data: Dictionary, name: String):
 	var arrays: Array
@@ -120,9 +163,14 @@ func add_gaussian_surface(import_mesh: ImporterMesh, material: ShaderMaterial, g
 	print("Tangent len " + str((arrays[Mesh.ARRAY_TANGENT])))
 	arrays[Mesh.ARRAY_COLOR] = vec4array_alpha_to_color_array_quads(gaussian_data["sh_coefficients"][0], gaussian_data["opacities"])
 	print("Color len " + str((arrays[Mesh.ARRAY_COLOR])))
-	var uv_uv2: Array[PackedVector2Array] = vec4array_to_pair_uv_quads(gaussian_data["scales"])
-	arrays[Mesh.ARRAY_TEX_UV] = uv_uv2[0]
-	arrays[Mesh.ARRAY_TEX_UV2] = uv_uv2[1]
+	arrays[Mesh.ARRAY_TEX_UV] = vec4array_to_vec2_uv_quads(gaussian_data["scales"], gaussian_data["sh_coefficients"][4], 2)
+	arrays[Mesh.ARRAY_TEX_UV2] = vec4array_to_vec2_uv_quads(gaussian_data["sh_coefficients"][1], gaussian_data["sh_coefficients"][5], 2)
+	arrays[Mesh.ARRAY_CUSTOM0] = vec4array_pairs_to_half8_custom_quads(gaussian_data["sh_coefficients"][2], gaussian_data["sh_coefficients"][3], gaussian_data["sh_coefficients"][4]).to_float32_array()
+	arrays[Mesh.ARRAY_CUSTOM1] = vec4array_pairs_to_half8_custom_quads(gaussian_data["sh_coefficients"][6], gaussian_data["sh_coefficients"][7], gaussian_data["sh_coefficients"][5]).to_float32_array()
+	arrays[Mesh.ARRAY_CUSTOM2] = vec4array_pairs_to_half8_custom_quads(gaussian_data["sh_coefficients"][8], gaussian_data["sh_coefficients"][9], gaussian_data["sh_coefficients"][10]).to_float32_array()
+	arrays[Mesh.ARRAY_CUSTOM3] = vec4array_pairs_to_half8_custom_quads(gaussian_data["sh_coefficients"][11], gaussian_data["sh_coefficients"][12], gaussian_data["sh_coefficients"][13]).to_float32_array()
+	arrays[Mesh.ARRAY_WEIGHTS] = vec4array_pairs_2nd_to_half8_custom_quads(gaussian_data["sh_coefficients"][14], gaussian_data["sh_coefficients"][15],
+		gaussian_data["sh_coefficients"][10], gaussian_data["sh_coefficients"][13]).to_float32_array()
 	var indices: PackedInt32Array
 	indices.resize(len(gaussian_data["positions"]) / 4 * 6)
 	# 0 1
@@ -145,7 +193,10 @@ func add_gaussian_surface(import_mesh: ImporterMesh, material: ShaderMaterial, g
 		{},
 		material,
 		name,
-		0) # TODO: Add customs or 8 bone weights here
+		(Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT) |
+		(Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM1_SHIFT) |
+		(Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM2_SHIFT) |
+		(Mesh.ARRAY_CUSTOM_RGBA_FLOAT << Mesh.ARRAY_FORMAT_CUSTOM3_SHIFT))
 
 
 func extract_gaussian_data(state: GLTFState, json: Dictionary, extensions: Dictionary, mesh_index: int, primitive_index: int) -> Dictionary:
@@ -262,6 +313,7 @@ func vec4array_alpha_to_color_array_quads(array: PackedVector4Array, opacities: 
 	print("color alpha len " + str(len(array)) + " colors " + str(len(opacities)))
 	for vec in array:
 		var alpha: float = clampf(opacities[i].x, 0.0, 1.0)
+		vec *= 0.28209479177
 		result.append(Color(vec.x, vec.y, vec.z, alpha))
 		result.append(Color(vec.x, vec.y, vec.z, alpha))
 		result.append(Color(vec.x, vec.y, vec.z, alpha))

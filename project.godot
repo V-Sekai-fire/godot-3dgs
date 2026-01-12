@@ -28,8 +28,3 @@ window/size/window_height_override=720
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/gaussian_splats/plugin.cfg")
-
-[rendering]
-
-renderer/rendering_method="gl_compatibility"
-renderer/rendering_method.mobile="gl_compatibility"
