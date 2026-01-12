@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://dvqg33ri1mn0t"]
+
+[ext_resource type="PackedScene" uid="uid://8l306v0c4s8p" path="res://addons/gaussian_splats/art/gltf_with_grid_instanced.glb" id="1_uw00l"]
+
+[node name="Scenes" type="Node3D" unique_id=1671224170]
+
+[node name="gltf_with_grid_instanced" parent="." unique_id=530292227 instance=ExtResource("1_uw00l")]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=134971107]
+transform = Transform3D(-0.9999361, 0.002859197, -0.010939123, 0, 0.96749806, 0.25287837, 0.011306609, 0.25286222, -0.96743625, 5.7578177, 88.91049, -277.14102)
