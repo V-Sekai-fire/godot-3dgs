@@ -216,7 +216,11 @@ void vertex() {
 				}
 			}
 
-			v_color = 1.0f / (1.0f + exp(-result));
+			result += 0.5;
+			result = clamp(result, 0.0, 1.0);
+
+			v_color = result;
+
 			v_opacity = a_glob_opacity;
 
 			// --- STEP 6: Pass Data to Fragment Shader ---
