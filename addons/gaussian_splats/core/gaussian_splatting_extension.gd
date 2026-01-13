@@ -21,7 +21,7 @@ func _import_pre_generate(state: GLTFState) -> Error:
 	
 	# make a material
 	var material = ShaderMaterial.new()
-	material.shader = preload("./gaussian_splat.gdshader")
+	material.shader = preload("./shaders/gaussian_splat.gdshader")
 	
 	var image_resolution : Vector2 = Vector2(1920, 1080)
 	var cropped_frame_mm : Vector2 = get_cropped_sensor_size(film_format_35mm, image_resolution)

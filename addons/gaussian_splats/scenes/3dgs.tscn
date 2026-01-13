@@ -43,26 +43,26 @@ render_mode skip_vertex_transform;
 
 #define SCREEN_QUAD_OUTPUT
 //#define SCREEN_QUAD_WIREFRAME
-#include \"res://addons/gaussian_splats/core/screen_quad_renderer.gdshaderinc\"
+#include \"res://addons/gaussian_splats/core/shaders/includes/screen_quad_renderer.gdshaderinc\"
 
 void vertex() {
 	QUAD_VERTEX_BASE = UV;
-	
+
 	QUAD_POS = vec2(VIEWPORT_SIZE/2.0);
 	QUAD_DIR = normalize(vec2(1,.2*sin(TIME)));
 	QUAD_SIZE = vec2(100, 200);
 	QUAD_DEPTH = 0.5;
-	
+
 	processQuadVertex();
 }
 
 void fragment() {
 	ALBEDO = vec3(1);
 	ALPHA = 1.0;
-	
+
 	ALBEDO = vec3(UV,0);
 	ALPHA = 1.0 - smoothstep(0.0, 0.5, length(UV-0.5));
-	
+
 	processQuadFragment();
 }
 
@@ -91,7 +91,6 @@ size = Vector2(2, 2)
 [node name="Scenes" type="Node3D"]
 
 [node name="gltf_with_grid_instanced" parent="." instance=ExtResource("1_uw00l")]
-visible = false
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(-0.9999361, 0.002859197, -0.010939123, 0, 0.96749806, 0.25287837, 0.011306609, 0.25286222, -0.96743625, 5.7578177, 88.91049, -277.14102)
@@ -105,6 +104,7 @@ material_override = SubResource("ShaderMaterial_tnp7i")
 multimesh = SubResource("MultiMesh_tnp7i")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+visible = false
 material_override = SubResource("ShaderMaterial_tnp7i")
 mesh = SubResource("QuadMesh_tnp7i")
 

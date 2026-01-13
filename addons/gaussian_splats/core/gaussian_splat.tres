@@ -1,6 +1,6 @@
 [gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://bonakm4g2gnm4"]
 
-[ext_resource type="Shader" uid="uid://dmbkyjncgbavi" path="res://addons/gaussian_splats/core/gaussian_splat.gdshader" id="1_5kbtw"]
+[ext_resource type="Shader" uid="uid://dmbkyjncgbavi" path="res://addons/gaussian_splats/core/shaders/gaussian_splat.gdshader" id="1_5kbtw"]
 
 [resource]
 render_priority = 0
