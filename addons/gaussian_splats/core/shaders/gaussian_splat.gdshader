@@ -11,9 +11,6 @@ render_mode unshaded;
 render_mode fog_disabled;
 
 // FIXME: precision highp float;
-#define SCREEN_QUAD_OUTPUT
-//#define SCREEN_QUAD_WIREFRAME
-#include "includes/screen_quad_renderer.gdshaderinc"
 
 uniform vec2 u_focal_length = vec2(2, 2);
 
@@ -21,8 +18,9 @@ uniform vec2 u_focal_length = vec2(2, 2);
 // Set from JavaScript to 1, 2, or 3.
 uniform int u_sh_degree = 3;
 
-group_uniforms Debug;
-uniform bool draw_quad = true;
+#define SCREEN_QUAD_OUTPUT
+//#define SCREEN_QUAD_WIREFRAME
+#include "includes/screen_quad_renderer.gdshaderinc"
 
 // All attributes are now always declared. The shader program requires a fixed set of inputs.
 // VERTEX_ID & 3 // in vec2 a_quad_vertex;
@@ -107,11 +105,10 @@ void vertex() {
 	QUAD_DIR = vec2(1,0);
 	QUAD_DEPTH = 0.5;
 
-
 // VERTEX_ID & 3 // in vec2 a_quad_vertex;
 	vec2 a_quad_vertex = vec2(
-		float(VERTEX_ID & 1) * 2.0 - 1.0,
-		float(VERTEX_ID & 2) * 1.0 - 1.0);
+	float(VERTEX_ID & 1) * 2.0 - 1.0,
+	float(VERTEX_ID & 2) * 1.0 - 1.0);
 	vec3 a_glob_position = VERTEX;
 	vec2 UVy = unpackHalf2x16(floatBitsToUint(UV.y));
 	vec2 UV2y = unpackHalf2x16(floatBitsToUint(UV2.y));
@@ -146,8 +143,7 @@ void vertex() {
 	float z_depth = view_space_pos.z;
 	if(z_depth > 0.0) { //z_depth <= 0.1f) { // FIXME
 		// Cull the whole polygon
-		VERTEX = vec3(2.0f, 2.0f, 2.0f);
-		POSITION = vec4(2.0f, 2.0f, 2.0f, 1.0f);
+		QUAD_DEPTH = -2.0;
 	} else {
 		vec3 scale = exp(a_glob_scale);
 
@@ -169,37 +165,25 @@ void vertex() {
 
 		if(det <= 0.0f) { // FIXME
 			// Cull the whole polygon
-			VERTEX = vec3(2.0f, 2.0f, 2.0f);
-			POSITION = vec4(2.0f, 2.0f, 2.0f, 1.0f);
+			QUAD_DEPTH = -2.0;
 		} else {
 
 			float mid = 0.5f * (cov2d[0][0] + cov2d[1][1]);
 			float lambda1 = mid + sqrt(max(0.01f, mid * mid - det));
 			float radius = ceil(6.0f * sqrt(max(lambda1, 0.0f)));
 
-			mat4 my_projection = PROJECTION_MATRIX;
-			vec2 test = vec2(POSITION.w / PROJECTION_MATRIX[0][0], POSITION.w / PROJECTION_MATRIX[1][1]) * 2.0;
-
 			vec4 clip_space_pos = PROJECTION_MATRIX * view_space_pos;
-		    vec2 ndc_pos = clip_space_pos.xy / clip_space_pos.w;
+		    vec3 ndc_pos = clip_space_pos.xyz / clip_space_pos.w;
 			
 			QUAD_POS = (ndc_pos.xy*0.5+0.5) * VIEWPORT_SIZE;
 		    QUAD_SIZE = vec2(radius,radius);
 			QUAD_DIR = vec2(1,0);
-			QUAD_DEPTH = 0.5; //clip_space_pos.z;
-			
-			//clip_space_pos.xy += a_quad_vertex * radius / u_focal_length * clip_space_pos.w;
-		    clip_space_pos.xy += a_quad_vertex * radius / u_focal_length * clip_space_pos.w / test;
-			
-			
-		    POSITION = clip_space_pos;
+			QUAD_DEPTH = (CLIP_SPACE_FAR==-1.0) ? ndc_pos.z*0.5+0.5 : ndc_pos.z;
 
     		// --- STEP 5: Calculate View-Dependent Color using Spherical Harmonics ---
+			// TODO: Use EYE_OFFSET to support VR
     		vec3 view_dir = normalize((MODEL_MATRIX * vec4(a_glob_position,1)).xyz - CAMERA_POSITION_WORLD);
-			//view_dir = mat3(VIEW_MATRIX) * view_dir;
-
-			//vec3 view_dir = normalize((MODEL_MATRIX * vec4(a_glob_position, 1.0)).xyz - CAMERA_POSITION_WORLD);
-
+			
 			// L=0 is always calculated.
 			vec3 result = SH_C0 * a_sh_0;
 
@@ -244,14 +228,10 @@ void vertex() {
 			v_cov2d_inv_upper.y = -inv_det * cov2d[0][1];
 			v_cov2d_inv_upper.z = inv_det * cov2d[0][0];
 
-			v_center_px = (ndc_pos * 0.5f + 0.5f) * VIEWPORT_SIZE;
-			//v_center_px = (ndc_pos * 0.5f + 0.5f) * vec2(POSITION.w / PROJECTION_MATRIX[0][0] * 2.0f, POSITION.w / PROJECTION_MATRIX[1][1] * 2.0f);
-
+			v_center_px = (ndc_pos.xy * 0.5f + 0.5f) * VIEWPORT_SIZE;
 		}
 	}
 
-	v_vertex_base = a_quad_vertex * 0.5 + 0.5;
-	
 	processQuadVertex();
 }
 
@@ -273,10 +253,6 @@ void vertex() {
 // The final color output for the current pixel. This will be sent to the
 // GPU's blending unit.
 // out vec4 o_frag_color;
-float box(vec2 p, vec2 d){
-	p = abs(p) - d;
-	return max(p.x, p.y);
-}
 
 void fragment () {
 

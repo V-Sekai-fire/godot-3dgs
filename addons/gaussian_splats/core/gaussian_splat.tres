@@ -5,5 +5,6 @@
 [resource]
 render_priority = 0
 shader = ExtResource("1_5kbtw")
-shader_parameter/u_focal_length = Vector2(1.3032254, 1.3032254)
+shader_parameter/u_focal_length = Vector2(592.8604, 592.8604)
 shader_parameter/u_sh_degree = 3
+shader_parameter/debug_screen_quad = true
