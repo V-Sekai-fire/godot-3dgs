@@ -2,8 +2,9 @@
 #define SCREEN_QUAD_RENDERER
 
 group_uniforms quad_renderer;
-uniform bool draw_quad = true;
+uniform bool debug_screen_quad = true;
 
+varying vec2 __quad_vertex_base;
 
 // Model space to clip space
 //mat4 __QuadTransform(vec3 center, vec2 screen_size, vec2 screen_dir, mat4 modelToView){
@@ -24,16 +25,47 @@ mat4 QuadTransform(mat4 modelToScreen, vec2 screen_size) {
 	return screenToClip;
 }
 
+// Returns a model space to clip space transform
+// z_depth always given in the range [0,1], even for OpenGL.
 mat4 QuadTransform2(vec2 pos, vec2 dir, vec2 scale, float z_depth, vec2 screen_size) {
 	mat4 modelToScreen = mat4(1);
-	
+	 
 	modelToScreen[3].xy = pos;
-	modelToScreen[3].z = z_depth;
+	modelToScreen[3].z = mix(CLIP_SPACE_FAR, 1.0, z_depth);
 	modelToScreen[0].xy = dir * scale.x;
 	modelToScreen[1].xy = vec2(-dir.y, dir.x) * scale.y;
 	
 	return QuadTransform(modelToScreen, screen_size);
 }
+
+void colorQuad(inout vec3 rgb, inout float alpha){
+	
+}
+
+void __processQuadVertex(mat4 modelview_matrix, vec2 vertex_base, inout vec4 position){
+	position = modelview_matrix * vec4(vertex_base * 2.0 - 1.0, 0, 1);
+	position.w = 1.0;
+}
+
+float __box(vec2 p, vec2 d){
+	p = abs(p) - d;
+	return max(p.x, p.y);
+}
+
+void __processQuadFragment(inout vec3 albedo, inout float alpha){
+	if(debug_screen_quad){
+		alpha = mix(alpha, 1.0, 0.0);
+		float b = __box(__quad_vertex_base - 0.5, vec2(0.5));
+		b = (1.0 - clamp(abs(b/fwidth(b) + 0.5), 0.0, 1.0));
+		albedo.g += b;
+		alpha += b;
+	}
+}
+
+void __screen_quad_no_op(){}
+
+#define processQuadVertex __quad_vertex_base = VERTEX.xy; __processQuadVertex(MODELVIEW_MATRIX, VERTEX.xy, POSITION); __screen_quad_no_op
+#define processQuadFragment __processQuadFragment(ALBEDO, ALPHA); __screen_quad_no_op
 
 //#define QuadTransform(screen_transform) __QuadTransform(screen_transform, VIEWPORT_SIZE)
 //#define QuadTransform2(pos, dir, scale, screen_size) __QuadTransform2(pos, dir, scale, screen_size, VIEWPORT_SIZE)

@@ -49,21 +49,26 @@ void vertex() {
 	vec2 screen_size = VIEWPORT_SIZE;
 	
 	MODELVIEW_MATRIX = QuadTransform2(
-			vec2(screen_size/2.0), 
+			vec2(screen_size/2.0),
 			normalize(vec2(1,.2*sin(TIME))),
-			vec2(100, 200), 
+			vec2(100, 200),
 			0.9,
 			screen_size);
 	
-	POSITION = MODELVIEW_MATRIX * vec4(vertex_base, 0, 1);
-	POSITION.w = 1.0;
+	VERTEX.xy = UV;
 	
-	//POSITION = vec4(VERTEX.xy, 0.99, 1);
+	processQuadVertex();
 }
 
 void fragment() {
-	//ALBEDO = vec3(0);
+	ALBEDO = vec3(1);
 	ALPHA = 1.0;
+	
+	ALBEDO = vec3(UV,0);
+	
+	colorQuad(ALBEDO, ALPHA);
+	
+	processQuadFragment();
 }
 
 //void light() {
@@ -75,12 +80,15 @@ void fragment() {
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_tnp7i"]
 render_priority = 0
 shader = SubResource("Shader_uw00l")
-shader_parameter/draw_quad = true
+shader_parameter/debug_screen_quad = true
 
 [sub_resource type="QuadMesh" id="QuadMesh_uw00l"]
 
 [sub_resource type="MultiMesh" id="MultiMesh_tnp7i"]
+transform_format = 1
+instance_count = 4
 mesh = SubResource("QuadMesh_uw00l")
+buffer = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
 [sub_resource type="QuadMesh" id="QuadMesh_tnp7i"]
 size = Vector2(2, 2)
