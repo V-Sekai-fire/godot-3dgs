@@ -3,7 +3,12 @@
 // Copyright (c) 2026 K. S. Ernest (iFire) Lee
 
 shader_type spatial;
-render_mode blend_mix, depth_draw_never, cull_disabled, skip_vertex_transform, unshaded, fog_disabled;
+render_mode blend_mix;
+render_mode depth_draw_never;
+render_mode cull_disabled;
+render_mode skip_vertex_transform;
+render_mode unshaded;
+render_mode fog_disabled;
 
 // FIXME: precision highp float;
 
@@ -13,6 +18,9 @@ uniform vec2 u_focal_length = vec2(2, 2);
 // This uniform controls the SH degree at RUNTIME.
 // Set from JavaScript to 1, 2, or 3.
 uniform int u_sh_degree = 3;
+
+group_uniforms Debug;
+uniform bool draw_quad = true;
 
 // All attributes are now always declared. The shader program requires a fixed set of inputs.
 // VERTEX_ID & 3 // in vec2 a_quad_vertex;
@@ -48,6 +56,7 @@ varying vec3 v_color;
 varying float v_opacity;
 varying vec3 v_cov2d_inv_upper;
 varying vec2 v_center_px;
+varying vec2 v_vertex_base;
 
 // --- SPHERICAL HARMONICS CONSTANTS ---
 const float SH_C0 = 0.28209479177f;
@@ -94,7 +103,7 @@ void vertex() {
 
 
 // VERTEX_ID & 3 // in vec2 a_quad_vertex;
-	vec2 a_quad_vertex = vec2( 
+	vec2 a_quad_vertex = vec2(
 		float(VERTEX_ID & 1) * 2.0 - 1.0,
 		float(VERTEX_ID & 2) * 1.0 - 1.0);
 	vec3 a_glob_position = VERTEX;
@@ -126,8 +135,8 @@ void vertex() {
 	vec3 a_sh_15 = vec3(WEIGHTSy.y, unpackHalf2x16(floatBitsToUint(BONE_WEIGHTS.z)));
 
 	// Steps 1-4: Projection, Covariance, and Bounding Box logic (identical)
-	vec4 view_space_pos = MODELVIEW_MATRIX * vec4(VERTEX, 1.0f);
-	
+	vec4 view_space_pos = MODELVIEW_MATRIX * vec4(a_glob_position, 1.0f);
+
 	float z_depth = view_space_pos.z;
 	if(z_depth > 0.0) { //z_depth <= 0.1f) { // FIXME
 		// Cull the whole polygon
@@ -135,55 +144,47 @@ void vertex() {
 		POSITION = vec4(2.0f, 2.0f, 2.0f, 1.0f);
 	} else {
 		vec3 scale = exp(a_glob_scale);
-		
+
 		mat3 rotation_matrix = mat3(TANGENT, BINORMAL, NORMAL);
-		/*
-		mat3 rotation_matrix = mat3(1.0f - 2.0f * (a_glob_rotation.y * a_glob_rotation.y + a_glob_rotation.z * a_glob_rotation.z), 
-									2.0f * (a_glob_rotation.x * a_glob_rotation.y - a_glob_rotation.z * a_glob_rotation.w), 
-									2.0f * (a_glob_rotation.x * a_glob_rotation.z + a_glob_rotation.y * a_glob_rotation.w), 
-									2.0f * (a_glob_rotation.x * a_glob_rotation.y + a_glob_rotation.z * a_glob_rotation.w), 
-									1.0f - 2.0f * (a_glob_rotation.x * a_glob_rotation.x + a_glob_rotation.z * a_glob_rotation.z), 
-									2.0f * (a_glob_rotation.y * a_glob_rotation.z - a_glob_rotation.x * a_glob_rotation.w), 
-									2.0f * (a_glob_rotation.x * a_glob_rotation.z - a_glob_rotation.y * a_glob_rotation.w), 
-									2.0f * (a_glob_rotation.y * a_glob_rotation.z + a_glob_rotation.x * a_glob_rotation.w), 
-									1.0f - 2.0f * (a_glob_rotation.x * a_glob_rotation.x + a_glob_rotation.y * a_glob_rotation.y));
-		*/
-		
+
 		mat3 scale_matrix = mat3(vec3(scale.x, 0, 0),
 								 vec3(0, scale.y, 0),
 								 vec3(0, 0, scale.z));
-		
-		mat3 M = rotation_matrix * scale_matrix;
-		mat3 sigma3d = M * transpose(M);
-		mat3 W = transpose(mat3(VIEW_MATRIX));
-		mat3 T = W * sigma3d * transpose(W);
-		mat3 J = transpose(mat3(
-			vec3(u_focal_length.x / z_depth, 0, -(u_focal_length.x * view_space_pos.x) / (z_depth * z_depth)),
-			vec3(0, u_focal_length.y / z_depth, -(u_focal_length.y * view_space_pos.y) / (z_depth * z_depth)),
-			vec3(0, 0, 0))); // FIXME: added transpose here
-		mat3 cov2d = transpose(J) * T * J;
-		
-		float det = cov2d[0][0] * cov2d[1][1] - cov2d[0][1] * cov2d[0][1];
+		//scale_matrix = mat3(1);
+
+	 	mat3 M = rotation_matrix * scale_matrix;
+	    mat3 sigma3d = M * transpose(M);
+	    mat3 W = transpose(mat3(VIEW_MATRIX));
+	    mat3 T = W * sigma3d * transpose(W);
+	    mat3 J = mat3(vec3(u_focal_length.x / z_depth, 0, -(u_focal_length.x * view_space_pos.x) / (z_depth * z_depth)), vec3(0, u_focal_length.y / z_depth, -(u_focal_length.y * view_space_pos.y) / (z_depth * z_depth)), vec3(0, 0, 0));
+	    mat3 cov2d = transpose(J) * T * J;
+
+	    float det = cov2d[0][0] * cov2d[1][1] - cov2d[0][1] * cov2d[0][1];
+
 		if(det <= 0.0f) { // FIXME
 			// Cull the whole polygon
 			VERTEX = vec3(2.0f, 2.0f, 2.0f);
 			POSITION = vec4(2.0f, 2.0f, 2.0f, 1.0f);
 		} else {
-		
+
 			float mid = 0.5f * (cov2d[0][0] + cov2d[1][1]);
 			float lambda1 = mid + sqrt(max(0.01f, mid * mid - det));
-			float radius = ceil(3.0f * sqrt(max(lambda1, 0.0f)));
-			
-			vec4 clip_space_pos = PROJECTION_MATRIX * view_space_pos;
-			// vec4 clip_space_pos = u_projection_matrix * view_space_pos;
-			vec2 ndc_pos = clip_space_pos.xy / clip_space_pos.w;
-			clip_space_pos.xy += a_quad_vertex * radius / u_focal_length * clip_space_pos.w;
-			VERTEX = view_space_pos.xyz + vec3(a_quad_vertex, 0.0);
-			POSITION = clip_space_pos;
-			//POSITION = PROJECTION_MATRIX * vec4(VERTEX, 1.0);
+			float radius = ceil(6.0f * sqrt(max(lambda1, 0.0f)));
 
-			// --- STEP 5: Calculate View-Dependent Color using Spherical Harmonics ---
-			vec3 view_dir = normalize((MODEL_MATRIX * vec4(a_glob_position, 1.0)).xyz - CAMERA_POSITION_WORLD);
+			mat4 my_projection = PROJECTION_MATRIX;
+			vec2 test = vec2(POSITION.w / PROJECTION_MATRIX[0][0], POSITION.w / PROJECTION_MATRIX[1][1]) * 2.0;
+
+			vec4 clip_space_pos = PROJECTION_MATRIX * view_space_pos;
+		    vec2 ndc_pos = clip_space_pos.xy / clip_space_pos.w;
+		    //clip_space_pos.xy += a_quad_vertex * radius / u_focal_length * clip_space_pos.w;
+		    clip_space_pos.xy += a_quad_vertex * radius / u_focal_length * clip_space_pos.w / test;
+		    POSITION = clip_space_pos;
+
+    		// --- STEP 5: Calculate View-Dependent Color using Spherical Harmonics ---
+    		vec3 view_dir = normalize((MODEL_MATRIX * vec4(a_glob_position,1)).xyz - CAMERA_POSITION_WORLD);
+			//view_dir = mat3(VIEW_MATRIX) * view_dir;
+
+			//vec3 view_dir = normalize((MODEL_MATRIX * vec4(a_glob_position, 1.0)).xyz - CAMERA_POSITION_WORLD);
 
 			// L=0 is always calculated.
 			vec3 result = SH_C0 * a_sh_0;
@@ -224,12 +225,14 @@ void vertex() {
 			v_cov2d_inv_upper.x = inv_det * cov2d[1][1];
 			v_cov2d_inv_upper.y = -inv_det * cov2d[0][1];
 			v_cov2d_inv_upper.z = inv_det * cov2d[0][0];
-			// vec2 resolution = vec2(POSITION.w / PROJECTION_MATRIX[0][0] * 2.0f, POSITION.w / PROJECTION_MATRIX[1][1] * 2.0f);
-			vec2 resolution = 2.0 * atan(1.0 / vec2(PROJECTION_MATRIX[0].x, PROJECTION_MATRIX[1].y));
-			//v_center_px = (ndc_pos * 0.5f + 0.5f) * resolution;
-			v_center_px = (ndc_pos - POSITION.xy / POSITION.w) * resolution * resolution;
+
+			v_center_px = (ndc_pos * 0.5f + 0.5f) * VIEWPORT_SIZE;
+			//v_center_px = (ndc_pos * 0.5f + 0.5f) * vec2(POSITION.w / PROJECTION_MATRIX[0][0] * 2.0f, POSITION.w / PROJECTION_MATRIX[1][1] * 2.0f);
+
 		}
 	}
+
+	v_vertex_base = a_quad_vertex * 0.5 + 0.5;
 }
 
 
@@ -250,6 +253,10 @@ void vertex() {
 // The final color output for the current pixel. This will be sent to the
 // GPU's blending unit.
 // out vec4 o_frag_color;
+float box(vec2 p, vec2 d){
+	p = abs(p) - d;
+	return max(p.x, p.y);
+}
 
 void fragment () {
 
@@ -260,13 +267,14 @@ void fragment () {
 
 	// Find the vector from the current pixel's coordinate (gl_FragCoord.xy)
 	// to the center of the projected Gaussian.
-	vec2 d = v_center_px; //(FRAGCOORD.xy - v_center_px);
+	vec2 d = (FRAGCOORD.xy - v_center_px);
+	//d = (SCREEN_UV - v_center_px);
 
 	// Evaluate the quadratic form: (x-μ)ᵀ * (Σ')⁻¹ * (x-μ)
 	// This gives us the squared Mahalanobis distance, which is the exponent's power.
 	// This value is 0 at the center of the Gaussian and increases as we move away.
 	float power = 0.5 * (d.x * d.x * v_cov2d_inv_upper.x + d.y * d.y * v_cov2d_inv_upper.z) + d.x * d.y * v_cov2d_inv_upper.y;
-	
+
 	// The value of the 2D Gaussian function is exp(-power).
 	// If the power is large, the influence is negligible. We can discard the pixel
 	// early to save computation. A threshold of 4.0 corresponds to e⁻⁴, which is
@@ -310,8 +318,19 @@ void fragment () {
 		//final_color = GammaToLinearSpace(final_color);
 		final_color = LinearToGammaSpace(final_color);
 	}
+
 	ALBEDO = final_color;
 	ALPHA = final_alpha;
+
+	//ALPHA = 1.0;
+
+	if(draw_quad){
+		ALPHA = mix(ALPHA, 1.0, 0.0);
+		float b = box(v_vertex_base-0.5, vec2(0.5));
+		b = (1.0 - clamp(abs(b/fwidth(b) + 0.5), 0.0, 1.0));
+		ALBEDO.g += b;
+		ALPHA += b;
+	}
 }
 
 

@@ -31,6 +31,8 @@ func _import_pre_generate(state: GLTFState) -> Error:
 	material.set_shader_parameter("u_focal_length", focal_length_px)
 	#print("FOCAL: ", image_resolution, cropped_frame_mm, fovy_degrees, focal_length_px)
 	
+	material = preload("uid://bonakm4g2gnm4")
+	
 	for mesh_i in range(len(state.meshes)):
 		var gltf_mesh: GLTFMesh = state.meshes[mesh_i]
 		var old_import_mesh: ImporterMesh = null
@@ -405,14 +407,21 @@ func get_type_components(type: String) -> int:
 		_:
 			return 0
 
-# The physical distance from the focal point to the image in pixels. 
-static func get_camera_focal_length_px(fovy:float, image_resolution:Vector2, image_physical_size_mm:Vector2) -> Vector2:
+# The physical distance from the focal point to the image in mm.
+static func get_camera_focal_length_mm(fovy:float, image_physical_size_mm:Vector2) -> float:
 	# Applying SOHCAHTOA to get the ratio between the opposite and adjecent side of the triangle.
 	# T=O/A -> A=O/T
 	var adjacent_ratio := 0.5 / tan(fovy / 2.0)
 	
 	# The physical distance from the focal point to the image in mm.
 	var focal_length_mm : float = image_physical_size_mm.y * adjacent_ratio
+	
+	return focal_length_mm
+
+# The physical distance from the focal point to the image in pixels. 
+static func get_camera_focal_length_px(fovy:float, image_resolution:Vector2, image_physical_size_mm:Vector2) -> Vector2:
+	# The physical distance from the focal point to the image in mm.
+	var focal_length_mm : float = get_camera_focal_length_mm(fovy, image_physical_size_mm)
 	
 	# How many pixels per milimeter on the image.
 	# Pixels may be non-square, thus it has split values for x and y. 

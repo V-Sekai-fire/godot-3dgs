@@ -1,10 +1,47 @@
-[gd_scene format=3 uid="uid://dvqg33ri1mn0t"]
+[gd_scene load_steps=3 format=3 uid="uid://dvqg33ri1mn0t"]
 
-[ext_resource type="PackedScene" uid="uid://8l306v0c4s8p" path="res://addons/gaussian_splats/art/gltf_with_grid_instanced.glb" id="1_uw00l"]
+[ext_resource type="PackedScene" uid="uid://2ohhmwno7h3c" path="res://addons/gaussian_splats/art/gltf_with_grid_instanced.glb" id="1_uw00l"]
 
-[node name="Scenes" type="Node3D" unique_id=1671224170]
+[sub_resource type="GDScript" id="GDScript_uw00l"]
+script/source = "@tool
+extends Node
 
-[node name="gltf_with_grid_instanced" parent="." unique_id=530292227 instance=ExtResource("1_uw00l")]
+const GAUSSIAN_SPLAT = preload(\"uid://bonakm4g2gnm4\")
 
-[node name="Camera3D" type="Camera3D" parent="." unique_id=134971107]
+# Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	pass # Replace with function body.
+
+
+## 35mm film format image size. https://en.wikipedia.org/wiki/135_film
+const film_format_35mm := Vector2(36,24)
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta: float) -> void:
+	var image_resolution : Vector2 = get_viewport().size
+	var fovy_degrees := get_viewport().get_camera_3d().fov
+	
+	if Engine.is_editor_hint():
+		image_resolution = EditorInterface.get_editor_viewport_3d(0).size
+		fovy_degrees = EditorInterface.get_editor_viewport_3d(0).get_camera_3d().fov
+		#print(fovy_degrees)
+	
+	var cropped_frame_mm : Vector2 = GaussianSplattingExtension.get_cropped_sensor_size(film_format_35mm, image_resolution)
+	#cropped_frame_mm = film_format_35mm
+	
+	var focal_length_px : Vector2 = GaussianSplattingExtension.get_camera_focal_length_px(deg_to_rad(fovy_degrees), image_resolution, cropped_frame_mm)
+	#focal_length_px = GaussianSplattingExtension.get_camera_focal_length_mm(deg_to_rad(fovy_degrees), cropped_frame_mm) * Vector2(1,1)
+	GAUSSIAN_SPLAT.set_shader_parameter(\"u_focal_length\", focal_length_px)
+"
+
+[node name="Scenes" type="Node3D"]
+
+[node name="gltf_with_grid_instanced" parent="." instance=ExtResource("1_uw00l")]
+
+[node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(-0.9999361, 0.002859197, -0.010939123, 0, 0.96749806, 0.25287837, 0.011306609, 0.25286222, -0.96743625, 5.7578177, 88.91049, -277.14102)
+
+[node name="Node" type="Node" parent="."]
+script = SubResource("GDScript_uw00l")
+
+[editable path="gltf_with_grid_instanced"]
