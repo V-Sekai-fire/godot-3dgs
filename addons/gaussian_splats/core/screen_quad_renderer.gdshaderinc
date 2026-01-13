@@ -1,6 +1,10 @@
 #ifndef SCREEN_QUAD_RENDERER
 #define SCREEN_QUAD_RENDERER
 
+#ifdef SCREEN_QUAD_WIREFRAME
+render_mode wireframe;
+#endif /*!SCREEN_QUAD_WIREFRAME*/
+
 group_uniforms quad_renderer;
 uniform bool debug_screen_quad = true;
 
@@ -61,6 +65,9 @@ float __box(vec2 p, vec2 d){
 }
 
 void __processQuadFragment(inout vec3 albedo, inout float alpha){
+#ifdef SCREEN_QUAD_WIREFRAME
+	alpha = 1.0;
+#else
 	if(debug_screen_quad){
 		alpha = mix(alpha, 1.0, 0.0);
 		float b = __box(__quad_vertex_base - 0.5, vec2(0.5));
@@ -68,17 +75,18 @@ void __processQuadFragment(inout vec3 albedo, inout float alpha){
 		albedo.g += b;
 		alpha += b;
 	}
+#endif /*!SCREEN_QUAD_WIREFRAME*/
 }
 
 void __screen_quad_no_op(){}
 
 #ifdef SCREEN_QUAD_OUTPUT
-#define processQuadOutputs MODELVIEW_MATRIX=QuadTransform2(QUAD_POS, QUAD_DIR, QUAD_SIZE, QUAD_DEPTH, VIEWPORT_SIZE)
+#define __processQuadOutputs MODELVIEW_MATRIX=QuadTransform2(QUAD_POS, QUAD_DIR, QUAD_SIZE, QUAD_DEPTH, VIEWPORT_SIZE)
 #else
-#define processQuadOutputs
+#define __processQuadOutputs
 #endif
 
-#define processQuadVertex processQuadOutputs; __processQuadVertex(MODELVIEW_MATRIX, __quad_vertex_base.xy, POSITION); __screen_quad_no_op
+#define processQuadVertex __processQuadOutputs; __processQuadVertex(MODELVIEW_MATRIX, __quad_vertex_base.xy, POSITION); __screen_quad_no_op
 
 
 #define processQuadFragment __processQuadFragment(ALBEDO, ALPHA); __screen_quad_no_op

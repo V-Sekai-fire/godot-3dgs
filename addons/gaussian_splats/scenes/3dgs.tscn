@@ -42,6 +42,7 @@ render_mode cull_disabled;
 render_mode skip_vertex_transform;
 
 #define SCREEN_QUAD_OUTPUT
+//#define SCREEN_QUAD_WIREFRAME
 #include \"res://addons/gaussian_splats/core/screen_quad_renderer.gdshaderinc\"
 
 void vertex() {
