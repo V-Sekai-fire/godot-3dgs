@@ -101,11 +101,7 @@ vec3 LinearToGammaSpace(vec3 RGB)
 
 
 void vertex() {
-	QUAD_VERTEX_BASE = vec2(float(VERTEX_ID & 1), float((VERTEX_ID & 2)>>1));
-	QUAD_POS = vec2(0);
-    QUAD_SIZE = vec2(100,100);
-	QUAD_DIR = vec2(1,0);
-	QUAD_DEPTH = 0.5;
+
 
 
 // VERTEX_ID & 3 // in vec2 a_quad_vertex;
@@ -182,16 +178,8 @@ void vertex() {
 
 			vec4 clip_space_pos = PROJECTION_MATRIX * view_space_pos;
 		    vec2 ndc_pos = clip_space_pos.xy / clip_space_pos.w;
-			
-			QUAD_POS = (ndc_pos.xy*0.5+0.5) * VIEWPORT_SIZE;
-		    QUAD_SIZE = vec2(radius,radius);
-			QUAD_DIR = vec2(1,0);
-			QUAD_DEPTH = 0.5; //clip_space_pos.z;
-			
-			//clip_space_pos.xy += a_quad_vertex * radius / u_focal_length * clip_space_pos.w;
+		    //clip_space_pos.xy += a_quad_vertex * radius / u_focal_length * clip_space_pos.w;
 		    clip_space_pos.xy += a_quad_vertex * radius / u_focal_length * clip_space_pos.w / test;
-			
-			
 		    POSITION = clip_space_pos;
 
     		// --- STEP 5: Calculate View-Dependent Color using Spherical Harmonics ---
@@ -251,8 +239,6 @@ void vertex() {
 	}
 
 	v_vertex_base = a_quad_vertex * 0.5 + 0.5;
-	
-	processQuadVertex();
 }
 
 
@@ -342,7 +328,15 @@ void fragment () {
 	ALBEDO = final_color;
 	ALPHA = final_alpha;
 
-	processQuadFragment();
+	//ALPHA = 1.0;
+
+	if(draw_quad){
+		ALPHA = mix(ALPHA, 1.0, 0.0);
+		float b = box(v_vertex_base-0.5, vec2(0.5));
+		b = (1.0 - clamp(abs(b/fwidth(b) + 0.5), 0.0, 1.0));
+		ALBEDO.g += b;
+		ALPHA += b;
+	}
 }
 
 
