@@ -1,6 +1,8 @@
-[gd_scene load_steps=9 format=3 uid="uid://dvqg33ri1mn0t"]
+[gd_scene load_steps=11 format=3 uid="uid://dvqg33ri1mn0t"]
 
 [ext_resource type="PackedScene" uid="uid://2ohhmwno7h3c" path="res://addons/gaussian_splats/art/gltf_with_grid_instanced.glb" id="1_uw00l"]
+[ext_resource type="Material" uid="uid://bonakm4g2gnm4" path="res://addons/gaussian_splats/core/gaussian_splat.tres" id="3_huo0t"]
+[ext_resource type="PackedScene" uid="uid://dmsjkrhv0bc66" path="res://addons/gaussian_splats/art/rotations2D_GLTF.glb" id="3_ptdrs"]
 
 [sub_resource type="GDScript" id="GDScript_uw00l"]
 script/source = "@tool
@@ -93,6 +95,7 @@ size = Vector2(2, 2)
 [node name="Scenes" type="Node3D"]
 
 [node name="gltf_with_grid_instanced" parent="." instance=ExtResource("1_uw00l")]
+visible = false
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(-0.9999361, 0.002859197, -0.010939123, 0, 0.96749806, 0.25287837, 0.011306609, 0.25286222, -0.96743625, 5.7578177, 88.91049, -277.14102)
@@ -114,4 +117,11 @@ mesh = SubResource("QuadMesh_tnp7i")
 transform = Transform3D(100, 0, 0, 0, 100, 0, 0, 0, 100, 0, 0, 0)
 mesh = SubResource("BoxMesh_uw00l")
 
+[node name="rotations2D_GLTF" parent="." instance=ExtResource("3_ptdrs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.774044, 176.64052, 430.87918)
+
+[node name="Mesh" parent="rotations2D_GLTF" index="0"]
+material_override = ExtResource("3_huo0t")
+
 [editable path="gltf_with_grid_instanced"]
+[editable path="rotations2D_GLTF"]

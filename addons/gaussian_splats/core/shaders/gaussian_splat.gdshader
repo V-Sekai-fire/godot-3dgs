@@ -58,6 +58,8 @@ varying vec3 v_cov2d_inv_upper;
 varying vec2 v_center_px;
 varying vec2 v_vertex_base;
 
+const float ALPHA_CUTOFF = 0.1;
+
 // --- SPHERICAL HARMONICS CONSTANTS ---
 const float SH_C0 = 0.28209479177f;
 const float SH_C1 = 0.4886025119f;
@@ -140,7 +142,7 @@ void vertex() {
     QUAD_SIZE = vec2(100,100);
 	QUAD_DIR = vec2(1,0);
 	QUAD_DEPTH = 0.5;
-
+	
 // VERTEX_ID & 3 // in vec2 a_quad_vertex;
 	vec2 a_quad_vertex = vec2(
 	float(VERTEX_ID & 1) * 2.0 - 1.0,
@@ -179,10 +181,11 @@ void vertex() {
 	vec4 view_space_pos = MODELVIEW_MATRIX * vec4(a_glob_position, 1.0f);
 
 	float z_depth = view_space_pos.z;
-	if(z_depth > 0.0) { //z_depth <= 0.1f) { // FIXME
+	if(z_depth > 0.0) {
 		// Cull the whole polygon
 		QUAD_DEPTH = -2.0;
-	} else {
+	} 
+	else {
 		vec3 scale = exp(a_glob_scale);
 
 		mat3 rotation_matrix = mat3(TANGENT, BINORMAL, NORMAL);
@@ -205,7 +208,6 @@ void vertex() {
 			// Cull the whole polygon
 			QUAD_DEPTH = -2.0;
 		} else {
-
 			float mid = 0.5f * (cov2d[0][0] + cov2d[1][1]);
 			float lambda1 = mid + sqrt(max(0.01f, mid * mid - det));
 			float radius = ceil(6.0f * sqrt(max(lambda1, 0.0f)));
@@ -214,17 +216,16 @@ void vertex() {
 		    vec3 ndc_pos = clip_space_pos.xyz / clip_space_pos.w;
 			
 			QUAD_POS = (ndc_pos.xy*0.5+0.5) * VIEWPORT_SIZE;
-		    QUAD_SIZE = vec2(radius,radius);
+		    QUAD_SIZE = vec2(radius,radius*0.5);
 			QUAD_DIR = vec2(1,0);
 			QUAD_DEPTH = (CLIP_SPACE_FAR==-1.0) ? ndc_pos.z*0.5+0.5 : ndc_pos.z;
+
 
     		// --- STEP 5: Calculate View-Dependent Color using Spherical Harmonics ---
 			// TODO: Use EYE_OFFSET to support VR
     		vec3 view_dir = normalize((MODEL_MATRIX * vec4(a_glob_position,1)).xyz - CAMERA_POSITION_WORLD);
 			
-			// L=0 is always calculated.
 			vec3 result = calculateSphericalHarmonics(coefficients, view_dir);
-
 			v_color = result;
 
 			v_opacity = a_glob_opacity;
@@ -236,6 +237,8 @@ void vertex() {
 			v_cov2d_inv_upper.y = -inv_det * cov2d[0][1];
 			v_cov2d_inv_upper.z = inv_det * cov2d[0][0];
 
+			//QUAD_DIR = normalize(cov2d[0].xy);
+			
 			v_center_px = (ndc_pos.xy * 0.5f + 0.5f) * VIEWPORT_SIZE;
 		}
 	}
