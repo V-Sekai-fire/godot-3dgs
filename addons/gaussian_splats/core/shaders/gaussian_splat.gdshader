@@ -253,14 +253,14 @@ void vertex() {
 
 	// Evaluate the quadratic form: (x-μ)ᵀ * (Σ')⁻¹ * (x-μ)
 	// This gives us the squared Mahalanobis distance, which is the exponent's power.
-	// This value is 0 at the center of the Gaussian and increases as we move away.
+	// This value is 0 at the center of the Gaussian and increases as we move away. d.z = sqrt(abs(d.x*d.y))
 	//float power = 0.5 * (d.x * d.x * v_cov2d_inv_upper.x + d.y * d.y * v_cov2d_inv_upper.z) + d.x * d.y * v_cov2d_inv_upper.y;
 	QUAD_SIZE *= sqrt(abs(v_cov2d_inv_upper.xy)/v_cov2d_inv_upper.z);
 	
 	UV = a_quad_vertex;
 	
 	const float power_cutoff = -log(GAUSSIAN_VALUE_CUTOFF);
-	const float scale_up = power_cutoff;
+	const float scale_up = sqrt(power_cutoff);
 	
 	UV *= scale_up;
 	QUAD_SIZE *= scale_up;
@@ -289,7 +289,7 @@ void vertex() {
 
 void fragment () {
 	
-	float power = length(UV);
+	float power = dot(UV, UV);
 	
 	// The value of the 2D Gaussian function is exp(-power).
 	// If the power is large, the influence is negligible. We can discard the pixel
