@@ -58,7 +58,7 @@ varying vec3 v_cov2d_inv_upper;
 varying vec2 v_center_px;
 varying vec2 v_vertex_base;
 
-const float ALPHA_CUTOFF = 0.1;
+const float GAUSSIAN_VALUE_CUTOFF = 0.01;
 
 // --- SPHERICAL HARMONICS CONSTANTS ---
 const float SH_C0 = 0.28209479177f;
@@ -243,6 +243,28 @@ void vertex() {
 		}
 	}
 
+
+	// --- STEP 1: Calculate G(x), the Gaussian Influence ---
+
+	// Find the vector from the current pixel's coordinate (gl_FragCoord.xy)
+	// to the center of the projected Gaussian.
+	//vec2 d = (FRAGCOORD.xy - v_center_px);
+	//d = (SCREEN_UV - v_center_px);
+
+	// Evaluate the quadratic form: (x-μ)ᵀ * (Σ')⁻¹ * (x-μ)
+	// This gives us the squared Mahalanobis distance, which is the exponent's power.
+	// This value is 0 at the center of the Gaussian and increases as we move away.
+	//float power = 0.5 * (d.x * d.x * v_cov2d_inv_upper.x + d.y * d.y * v_cov2d_inv_upper.z) + d.x * d.y * v_cov2d_inv_upper.y;
+	QUAD_SIZE *= sqrt(abs(v_cov2d_inv_upper.xy)/v_cov2d_inv_upper.z);
+	
+	UV = a_quad_vertex;
+	
+	const float power_cutoff = -log(GAUSSIAN_VALUE_CUTOFF);
+	const float scale_up = power_cutoff;
+	
+	UV *= scale_up;
+	QUAD_SIZE *= scale_up;
+
 	processQuadVertex();
 }
 
@@ -266,39 +288,27 @@ void vertex() {
 // out vec4 o_frag_color;
 
 void fragment () {
-
-// The base opacity of the Gaussian, learned during training.
-//in float v_opacity
-
-	// --- STEP 1: Calculate G(x), the Gaussian Influence ---
-
-	// Find the vector from the current pixel's coordinate (gl_FragCoord.xy)
-	// to the center of the projected Gaussian.
-	vec2 d = (FRAGCOORD.xy - v_center_px);
-	//d = (SCREEN_UV - v_center_px);
-
-	// Evaluate the quadratic form: (x-μ)ᵀ * (Σ')⁻¹ * (x-μ)
-	// This gives us the squared Mahalanobis distance, which is the exponent's power.
-	// This value is 0 at the center of the Gaussian and increases as we move away.
-	float power = 0.5 * (d.x * d.x * v_cov2d_inv_upper.x + d.y * d.y * v_cov2d_inv_upper.z) + d.x * d.y * v_cov2d_inv_upper.y;
-
+	
+	float power = length(UV);
+	
 	// The value of the 2D Gaussian function is exp(-power).
 	// If the power is large, the influence is negligible. We can discard the pixel
 	// early to save computation. A threshold of 4.0 corresponds to e⁻⁴, which is
 	// very transparent and visually insignificant.
-	if (power > 4.0) {
-		//discard; // FIXME
+	const float power_cutoff = -log(GAUSSIAN_VALUE_CUTOFF);
+	if (power > power_cutoff) {
+		//discard;
 	}
 
 	// Calculate the actual influence value of the Gaussian at this pixel.
-	float G_x = exp(-power);
+	float G_influence = exp(-power);
 
 
 	// --- STEP 2: Calculate the Final Alpha Contribution (aᵢ) ---
 
 	// The final alpha (aᵢ) is the product of the Gaussian's base opacity (α)
 	// and its influence at this specific pixel (G(x)).
-	float final_alpha = v_opacity * G_x;
+	float final_alpha = v_opacity * G_influence;
 
 	// Optimization: If the final alpha is practically invisible, discard the pixel.
 	// This avoids sending nearly transparent pixels to the blending unit, which can
@@ -309,20 +319,8 @@ void fragment () {
 		}
 	}
 
-
-	// --- STEP 3: Set Final Pixel Color ---
-
-	// Output the final color in "pre-multiplied alpha" format.
-	// The RGB color channels are multiplied by the final alpha.
-	// The alpha channel is the final alpha itself.
-	//
-	// Format: vec4(color * alpha, alpha)
-	//
-	// This format is required for the blending function `glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)`
-	// to correctly calculate the final blended color and transmittance on the GPU.
 	vec3 final_color = v_color;
 	if (OUTPUT_IS_SRGB) {
-		//final_color = GammaToLinearSpace(final_color);
 		final_color = LinearToGammaSpace(final_color);
 	}
 
@@ -331,10 +329,3 @@ void fragment () {
 
 	processQuadFragment();
 }
-
-
-// TODO: view-space billboard code
-//vec3 right = normalize(vec3(model_view[0][0], model_view[1][0], model_view[2][0]));
-//vec3 up = normalize(vec3(model_view[0][1], model_view[1][1], model_view[2][1]));
-//vec3 pos = (right * leftright + up * topbottom) * actual_scale;
-
