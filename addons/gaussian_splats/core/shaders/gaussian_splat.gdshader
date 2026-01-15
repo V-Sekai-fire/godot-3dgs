@@ -97,6 +97,42 @@ vec3 LinearToGammaSpace(vec3 RGB)
   return 0.662002687 * S1 + 0.684122060 * S2 - 0.323583601 * S3 - 0.0225411470 * RGB;
 }
 
+vec3 calculateSphericalHarmonics(vec3 coefficients[16], vec3 v) {
+	// L=0 is always calculated.
+	vec3 result = SH_C0 * coefficients[0];
+
+	// Use `if` statements based on the uniform to conditionally add higher-order contributions.
+	if(u_sh_degree >= 1) {
+		float dx = v.x, dy = v.y, dz = v.z;
+		result += SH_C1 * dy *  coefficients[1];
+		result += SH_C1 * dz * coefficients[2];
+		result += SH_C1 * dx * coefficients[3];
+
+		if(u_sh_degree >= 2) {
+			float dx2 = dx * dx, dy2 = dy * dy, dz2 = dz * dz;
+			result += SH_C2_0 * dx * dy * coefficients[4];
+			result += SH_C2_0 * dy * dz * coefficients[5];
+			result += SH_C2_1 * (3.0f * dz2 - 1.0f) * coefficients[6];
+			result += SH_C2_0 * dx * dz * coefficients[7];
+			result += SH_C2_2 * (dx2 - dy2) * coefficients[8];
+
+			if(u_sh_degree >= 3) {
+				result += SH_C3_0 * dy * (3.0f * dx2 - dy2) * coefficients[9];
+				result += SH_C3_1 * dx * dy * dz * coefficients[10];
+				result += SH_C3_2 * dy * (5.0f * dz2 - 1.0f) * coefficients[11];
+				result += SH_C3_3 * dz * (5.0f * dz2 - 3.0f) * coefficients[12];
+				result += SH_C3_2 * dx * (5.0f * dz2 - 1.0f) * coefficients[13];
+				result += SH_C3_1 * dz * (dx2 - dy2) * coefficients[14];
+				result += SH_C3_0 * dx * (dx2 - 3.0f * dy2) * coefficients[15];
+			}
+		}
+	}
+
+	result += 0.5;
+	result = clamp(result, 0.0, 1.0);
+
+	return result;
+}
 
 void vertex() {
 	QUAD_VERTEX_BASE = vec2(float(VERTEX_ID & 1), float((VERTEX_ID & 2)>>1));
@@ -136,6 +172,8 @@ void vertex() {
 	vec3 a_sh_13 = vec3(unpackHalf2x16(floatBitsToUint(CUSTOM3.w)), WEIGHTSw.y);
 	vec3 a_sh_14 = vec3(unpackHalf2x16(floatBitsToUint(BONE_WEIGHTS.x)), WEIGHTSy.x);
 	vec3 a_sh_15 = vec3(WEIGHTSy.y, unpackHalf2x16(floatBitsToUint(BONE_WEIGHTS.z)));
+
+	vec3 coefficients[16] = vec3[16](a_sh_0, a_sh_1, a_sh_2, a_sh_3, a_sh_4, a_sh_5, a_sh_6, a_sh_7, a_sh_8, a_sh_9, a_sh_10, a_sh_11, a_sh_12, a_sh_13, a_sh_14, a_sh_15);
 
 	// Steps 1-4: Projection, Covariance, and Bounding Box logic (identical)
 	vec4 view_space_pos = MODELVIEW_MATRIX * vec4(a_glob_position, 1.0f);
@@ -185,37 +223,7 @@ void vertex() {
     		vec3 view_dir = normalize((MODEL_MATRIX * vec4(a_glob_position,1)).xyz - CAMERA_POSITION_WORLD);
 			
 			// L=0 is always calculated.
-			vec3 result = SH_C0 * a_sh_0;
-
-			// Use `if` statements based on the uniform to conditionally add higher-order contributions.
-			if(u_sh_degree >= 1) {
-				float dx = view_dir.x, dy = view_dir.y, dz = view_dir.z;
-				result += SH_C1 * dy *  a_sh_1;
-				result += SH_C1 * dz * a_sh_2;
-				result += SH_C1 * dx * a_sh_3;
-
-				if(u_sh_degree >= 2) {
-					float dx2 = dx * dx, dy2 = dy * dy, dz2 = dz * dz;
-					result += SH_C2_0 * dx * dy * a_sh_4;
-					result += SH_C2_0 * dy * dz * a_sh_5;
-					result += SH_C2_1 * (3.0f * dz2 - 1.0f) * a_sh_6;
-					result += SH_C2_0 * dx * dz * a_sh_7;
-					result += SH_C2_2 * (dx2 - dy2) * a_sh_8;
-
-					if(u_sh_degree >= 3) {
-						result += SH_C3_0 * dy * (3.0f * dx2 - dy2) * a_sh_9;
-						result += SH_C3_1 * dx * dy * dz * a_sh_10;
-						result += SH_C3_2 * dy * (5.0f * dz2 - 1.0f) * a_sh_11;
-						result += SH_C3_3 * dz * (5.0f * dz2 - 3.0f) * a_sh_12;
-						result += SH_C3_2 * dx * (5.0f * dz2 - 1.0f) * a_sh_13;
-						result += SH_C3_1 * dz * (dx2 - dy2) * a_sh_14;
-						result += SH_C3_0 * dx * (dx2 - 3.0f * dy2) * a_sh_15;
-					}
-				}
-			}
-
-			result += 0.5;
-			result = clamp(result, 0.0, 1.0);
+			vec3 result = calculateSphericalHarmonics(coefficients, view_dir);
 
 			v_color = result;
 
