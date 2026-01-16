@@ -50,6 +50,25 @@ void projEllipsoid(in vec3 pos, in mat3 mat, in Camera cam, out mat2 axes, out v
     extractEllipse(a, b, c, d, e, f, axes, size, center);
 }
 
+mat4 projectSplatToView(mat4 splatToView){
+	Camera cam;
+	cam.pos = vec3(0);
+	cam.axes = mat3(1);
+	cam.focal = 1.0;
+
+	mat4 ellipse_transform = splatToView;
+	mat2 axes;
+	vec2 size;
+	vec2 center;
+	projEllipsoid(ellipse_transform[3].xyz, mat3(ellipse_transform), cam, axes, size, center);
+
+	mat4 ellipse_screen_transform = mat4(1);
+	ellipse_transform[0].xy = axes[0] * size.x;
+	ellipse_transform[1].xy = axes[1] * size.y;
+	ellipse_transform[3].xyz = vec3(center,1);
+
+	return ellipse_transform;
+}
 
 void vertex() {
 	QUAD_VERTEX_BASE = UV;
@@ -59,30 +78,16 @@ void vertex() {
 	QUAD_SIZE = vec2(100, 200);
 	QUAD_DEPTH = 0.5;
 
-	//mat4 proj = INV_PROJECTION_MATRIX;
-	//proj[1].xyz = -proj[1].xyz;
-	//proj = CreateClipToViewMatrix(proj, vec4(1,1,1,1));
-
-	Camera cam;
-	cam.pos = vec3(0);
-	cam.axes = mat3(1);
-	cam.focal = 1.0;
-
 	mat4 ellipse_transform = MODELVIEW_MATRIX;
-	//Ellipse e = GetProjectedEllipsoid(GODOT_TO_UNITY_MAT4(proj), pos, vec3(1,2,3), vec4(0,0,0,1));
-
-	mat2 axes;
-	vec2 size;
-	vec2 center;
-	projEllipsoid(ellipse_transform[3].xyz, mat3(ellipse_transform), cam, axes, size, center);
+	ellipse_transform = projectSplatToView(ellipse_transform);
 
 	vec4 ndc;
-	QUAD_POS = (PROJECTION_MATRIX * vec4(center, 1, 1)).xy / (PROJECTION_MATRIX * vec4(center, 1, 1)).w;
+	QUAD_POS = (PROJECTION_MATRIX * vec4(ellipse_transform[3].xy, 1, 1)).xy / (PROJECTION_MATRIX * vec4(ellipse_transform[3].xy, 1, 1)).w;
 	QUAD_POS = (QUAD_POS * 0.5 + 0.5) * VIEWPORT_SIZE;
-	QUAD_DIR = axes[0];
+	QUAD_DIR = normalize(ellipse_transform[0].xy);
 	QUAD_DIR.y *= -1.0;
-	QUAD_SIZE.x = length(mat2(PROJECTION_MATRIX) * axes[0] * size.x * VIEWPORT_SIZE * 0.5);
-	QUAD_SIZE.y = length(mat2(PROJECTION_MATRIX) * axes[1] * size.y * VIEWPORT_SIZE * 0.5);
+	QUAD_SIZE.x = length(mat2(PROJECTION_MATRIX) * ellipse_transform[0].xy * VIEWPORT_SIZE * 0.5);
+	QUAD_SIZE.y = length(mat2(PROJECTION_MATRIX) * ellipse_transform[1].xy * VIEWPORT_SIZE * 0.5);
 
 	processQuadVertex();
 }
