@@ -9,6 +9,11 @@
 #define double_4x4 float4x4
 //#define float3x3(a,b,c,d,e,f,g,h,i) mat3(vec3(a,b,c), vec3(d,e,f), vec3(g,h,i))
 
+//struct double_4x4
+//{
+    //float2 m[4][4];  
+//};
+
 #define static
 
 #define dmat_mul mul
@@ -21,6 +26,18 @@ const mat4 unity_CameraInvProjection = mat4(1);
 const vec4 _ProjectionParams = vec4(1);
 
 #define mul(A,B) (A*B)
+
+const mat4 unity_to_godot_coordinate_transform = mat4(vec4(1,0,0,0), vec4(0,1,0,0), vec4(0,0,-1,0), vec4(0,0,0,1));
+
+mat4 UNITY_TO_GODOT_MAT4(mat4 M) {
+	return unity_to_godot_coordinate_transform * transpose(M);
+}
+
+mat3 UNITY_TO_GODOT_MAT3(mat3 M) {
+	return mat3(unity_to_godot_coordinate_transform) * transpose(M);
+}
+
+//#define UNITY_MATRIX_TO_GODOT(M) transpose(M)
 
 // rotate vector v by quaternion q
 float3 q_rotate(float3 v, float4 q) {
@@ -135,9 +152,9 @@ float4x4 RotationScaleInverse(float4 q, float3 s) {
     float3x3 R = quat_to_mat(q);
     float3x3 Rt = transpose(R);
     float3x3 Pinv = float3x3(Rt[0] / s.x, Rt[1] / s.y, Rt[2] / s.z);
-	return float4x4(1);
+	//return float4x4(1);
 	// TODO
-    //return float4x4(Pinv[0], 0, Pinv[1], 0, Pinv[2], 0, 0, 0, 0, 1);
+    return float4x4(vec4(Pinv[0], 0), vec4(Pinv[1], 0), vec4(Pinv[2], 0), vec4(0, 0, 0, 1));
 }
 
 float4x4 InverseSplat(float3 t, float3 s, float4 q) {
