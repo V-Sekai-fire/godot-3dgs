@@ -30,11 +30,11 @@ const vec4 _ProjectionParams = vec4(1);
 const mat4 unity_to_godot_coordinate_transform = mat4(vec4(1,0,0,0), vec4(0,1,0,0), vec4(0,0,-1,0), vec4(0,0,0,1));
 
 mat4 UNITY_TO_GODOT_MAT4(mat4 M) {
-	return unity_to_godot_coordinate_transform * transpose(M);
+	return unity_to_godot_coordinate_transform * transpose(M) * inverse(unity_to_godot_coordinate_transform);
 }
 
 mat3 UNITY_TO_GODOT_MAT3(mat3 M) {
-	return mat3(unity_to_godot_coordinate_transform) * transpose(M);
+	return mat3(unity_to_godot_coordinate_transform) * transpose(M) * inverse(mat3(unity_to_godot_coordinate_transform));
 }
 
 //#define UNITY_MATRIX_TO_GODOT(M) transpose(M)
