@@ -60,6 +60,7 @@ varying vec2 v_center_px;
 varying vec2 v_vertex_base;
 
 const float GAUSSIAN_VALUE_CUTOFF = 0.01;
+const float ELLIPSOID_RADIUS = 1.0;
 
 // --- SPHERICAL HARMONICS CONSTANTS ---
 const float SH_C0 = 0.28209479177f;
@@ -224,12 +225,6 @@ mat4 projectSplatToScreen(mat4 splatToView, mat4 viewToClip, vec2 screen_size){
 	
 	mat4 splatToScreen = NDCToScreen * splatToNDC;
 	
-	//splatToScreen[0].xy *= screen_size;
-	//splatToScreen[1].xy *= screen_size;
-	//splatToScreen[2].xy *= screen_size;
-	//splatToScreen[3].xy *= screen_size;
-	//splatToScreen[3].xy += screen_size;
-	
 	return splatToScreen;
 }
 
@@ -275,9 +270,10 @@ void vertex() {
 	vec3 coefficients[16] = vec3[16](a_sh_0, a_sh_1, a_sh_2, a_sh_3, a_sh_4, a_sh_5, a_sh_6, a_sh_7, a_sh_8, a_sh_9, a_sh_10, a_sh_11, a_sh_12, a_sh_13, a_sh_14, a_sh_15);
 
 	// Steps 1-4: Projection, Covariance, and Bounding Box logic (identical)
-	vec4 view_space_pos = MODELVIEW_MATRIX * vec4(a_glob_position, 1.0f);
+	vec3 view_space_pos = (MODELVIEW_MATRIX * vec4(a_glob_position, 1)).xyz;
+	vec3 eye_space_pos = view_space_pos - EYE_OFFSET;
 
-	float z_depth = view_space_pos.z;
+	float z_depth = eye_space_pos.z;
 	if(z_depth > 0.0) {
 		// Cull the whole polygon
 		QUAD_DEPTH = -2.0;
@@ -295,25 +291,26 @@ void vertex() {
 
 		mat4 ellipse_transform = mat4(mat3(MODELVIEW_MATRIX) * rotation_matrix * scale_matrix);
 		//ellipse_transform = mat4(1);
-		ellipse_transform[3].xyz = view_space_pos.xyz;
+		ellipse_transform[3].xyz = eye_space_pos.xyz;
 		
 	 	{
 			ellipse_transform = projectSplatToScreen(ellipse_transform, PROJECTION_MATRIX, VIEWPORT_SIZE);
 			
 			QUAD_POS = ellipse_transform[3].xy;
 			QUAD_DIR = normalize(ellipse_transform[0].xy);
-			QUAD_SIZE = vec2(length(ellipse_transform[0].xy),length(ellipse_transform[1].xy)) / 1.0;
+			QUAD_SIZE = vec2(length(ellipse_transform[0].xy), length(ellipse_transform[1].xy));
 			
-			vec4 clip_space_pos = PROJECTION_MATRIX * view_space_pos;
+			vec4 clip_space_pos = PROJECTION_MATRIX * vec4(eye_space_pos,1);
 		    vec3 ndc_pos = clip_space_pos.xyz / clip_space_pos.w;
 			
 			QUAD_DEPTH = (CLIP_SPACE_FAR==-1.0) ? ndc_pos.z*0.5+0.5 : ndc_pos.z;
 
 
-    		// --- STEP 5: Calculate View-Dependent Color using Spherical Harmonics ---
-			// TODO: Use EYE_OFFSET to support VR
-    		vec3 view_dir = normalize((MODEL_MATRIX * vec4(a_glob_position,1)).xyz - CAMERA_POSITION_WORLD);
+			// Use EYE_OFFSET to support VR
+			vec3 world_focal_point = (INV_VIEW_MATRIX * vec4(EYE_OFFSET,1)).xyz;
+    		vec3 view_dir = normalize((MODEL_MATRIX * vec4(a_glob_position,1)).xyz - world_focal_point);
 			
+    		// --- STEP 5: Calculate View-Dependent Color using Spherical Harmonics ---
 			vec3 result = calculateSphericalHarmonics(coefficients, view_dir);
 			v_color = result;
 
@@ -389,6 +386,8 @@ void fragment () {
 
 	ALBEDO = final_color;
 	ALPHA = final_alpha;
-
+	
+	ALPHA += 1.0 - clamp(abs(length(UV) - 1.0) / fwidth( length(UV)), 0.0, 1.0);
+	
 	processQuadFragment();
 }
