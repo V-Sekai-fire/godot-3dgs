@@ -1,10 +1,10 @@
-[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://bonakm4g2gnm4"]
+[gd_resource type="ShaderMaterial" format=3 uid="uid://bonakm4g2gnm4"]
 
 [ext_resource type="Shader" uid="uid://dmbkyjncgbavi" path="res://addons/gaussian_splats/core/shaders/gaussian_splat.gdshader" id="1_5kbtw"]
 
 [resource]
 render_priority = 0
 shader = ExtResource("1_5kbtw")
-shader_parameter/u_focal_length = Vector2(541.88153, 541.88153)
+shader_parameter/u_focal_length = Vector2(502.61472, 502.61472)
 shader_parameter/u_sh_degree = 3
-shader_parameter/debug_screen_quad = false
+shader_parameter/debug_screen_quad = true

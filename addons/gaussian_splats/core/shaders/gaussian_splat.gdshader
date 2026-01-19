@@ -137,6 +137,13 @@ vec3 calculateSphericalHarmonics(vec3 coefficients[16], vec3 v) {
 	return result;
 }
 
+// Structures
+struct Camera {
+    vec3 pos;
+    mat3 axes;
+    float focal;
+};
+
 // Ellipse in quadric form to ellipse in parametric form with major and minor axes
 // See https://www.shadertoy.com/view/stS3Ww
 void extractEllipse(in float a, in float b, in float c, in float d, in float e, in float f, out mat2 axes, out vec2 size, out vec2 center) {
@@ -152,13 +159,6 @@ void extractEllipse(in float a, in float b, in float c, in float d, in float e, 
     size = sqrt(-2.0 * g / vec2(a * ii + b * jj + ij, a * jj + b * ii - ij));
     axes = mat2(vec2(i, j), vec2(-j, i)) * sqrt(0.5);
 }
-
-// Structures
-struct Camera {
-    vec3 pos;
-    mat3 axes;
-    float focal;
-};
 
 // Ellipsoid projection
 void projEllipsoid(in vec3 pos, in mat3 mat, in Camera cam, out mat2 axes, out vec2 size, out vec2 center) {
@@ -178,7 +178,7 @@ void projEllipsoid(in vec3 pos, in mat3 mat, in Camera cam, out mat2 axes, out v
     extractEllipse(a, b, c, d, e, f, axes, size, center);
 }
 
-mat4 projectSplatToView(mat4 splatToView){
+mat4 projectSplatToViewPlane(mat4 splatToView){
 	Camera cam;
 	cam.pos = vec3(0);
 	cam.axes = mat3(1);
@@ -198,6 +198,40 @@ mat4 projectSplatToView(mat4 splatToView){
 	return ellipse_transform;
 }
 
+mat4 projectSplatToScreen(mat4 splatToView, mat4 viewToClip, vec2 screen_size){
+	mat4 ellipse_transform = projectSplatToViewPlane(splatToView);
+	ellipse_transform *= -1.0;
+	ellipse_transform[3][3] = 1.0;
+	
+	mat4 splatToNDC = ellipse_transform;
+	splatToNDC[0].xy = mat2(viewToClip) * splatToNDC[0].xy;
+	splatToNDC[1].xy = mat2(viewToClip) * splatToNDC[1].xy;
+	splatToNDC[3] = viewToClip * splatToNDC[3];
+	splatToNDC[3] /= splatToNDC[3][3];
+	
+	//splatToNDC[0][3] = 0.0;
+	//splatToNDC[1][3] = 0.0;
+	//splatToNDC[2][3] = 0.0;
+	//splatToNDC[3][3] = 1.0;
+	
+	mat4 NDCToScreen = mat4(1);
+	screen_size /= 2.0;
+	NDCToScreen[0].xy *= screen_size;
+	NDCToScreen[1].xy *= screen_size;
+	NDCToScreen[2].xy *= screen_size;
+	NDCToScreen[3].xy *= screen_size;
+	NDCToScreen[3].xy += screen_size;
+	
+	mat4 splatToScreen = NDCToScreen * splatToNDC;
+	
+	//splatToScreen[0].xy *= screen_size;
+	//splatToScreen[1].xy *= screen_size;
+	//splatToScreen[2].xy *= screen_size;
+	//splatToScreen[3].xy *= screen_size;
+	//splatToScreen[3].xy += screen_size;
+	
+	return splatToScreen;
+}
 
 void vertex() {
 	QUAD_VERTEX_BASE = vec2(float(VERTEX_ID & 1), float((VERTEX_ID & 2)>>1));
@@ -264,15 +298,11 @@ void vertex() {
 		ellipse_transform[3].xyz = view_space_pos.xyz;
 		
 	 	{
-			ellipse_transform = projectSplatToView(ellipse_transform);
-
-			QUAD_POS = (PROJECTION_MATRIX * vec4(ellipse_transform[3].xy, 1, 1)).xy / (PROJECTION_MATRIX * vec4(ellipse_transform[3].xy, 1, 1)).w;
-			QUAD_POS = (QUAD_POS * 0.5 + 0.5) * VIEWPORT_SIZE;
+			ellipse_transform = projectSplatToScreen(ellipse_transform, PROJECTION_MATRIX, VIEWPORT_SIZE);
+			
+			QUAD_POS = ellipse_transform[3].xy;
 			QUAD_DIR = normalize(ellipse_transform[0].xy);
-			QUAD_DIR.y *= -1.0;
-			QUAD_SIZE.x = length(mat2(PROJECTION_MATRIX) * ellipse_transform[0].xy * VIEWPORT_SIZE * 0.5);
-			QUAD_SIZE.y = length(mat2(PROJECTION_MATRIX) * ellipse_transform[1].xy * VIEWPORT_SIZE * 0.5);
-			//QUAD_SIZE *= 10.0;
+			QUAD_SIZE = vec2(length(ellipse_transform[0].xy),length(ellipse_transform[1].xy)) / 1.0;
 			
 			vec4 clip_space_pos = PROJECTION_MATRIX * view_space_pos;
 		    vec3 ndc_pos = clip_space_pos.xyz / clip_space_pos.w;
@@ -322,7 +352,6 @@ void vertex() {
 // out vec4 o_frag_color;
 
 void fragment () {
-	
 	float power = dot(UV, UV);
 	
 	// The value of the 2D Gaussian function is exp(-power).

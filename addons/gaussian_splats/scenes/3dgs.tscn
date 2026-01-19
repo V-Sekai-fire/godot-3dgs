@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://dvqg33ri1mn0t"]
+[gd_scene format=3 uid="uid://dvqg33ri1mn0t"]
 
 [ext_resource type="PackedScene" uid="uid://2ohhmwno7h3c" path="res://addons/gaussian_splats/art/gltf_with_grid_instanced.glb" id="1_uw00l"]
 [ext_resource type="Shader" uid="uid://c00bpo3mxet1h" path="res://addons/gaussian_splats/core/shaders/splat_test.gdshader" id="2_huo0t"]
@@ -60,46 +60,47 @@ size = Vector2(2, 2)
 
 [sub_resource type="QuadMesh" id="QuadMesh_huo0t"]
 
-[node name="Scenes" type="Node3D"]
+[node name="Scenes" type="Node3D" unique_id=1741955552]
 
-[node name="gltf_with_grid_instanced" parent="." instance=ExtResource("1_uw00l")]
+[node name="gltf_with_grid_instanced" parent="." unique_id=1725346123 instance=ExtResource("1_uw00l")]
 visible = false
 
-[node name="Camera3D" type="Camera3D" parent="."]
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1773469637]
 transform = Transform3D(-0.9999361, 0.002859197, -0.010939123, 0, 0.96749806, 0.25287837, 0.011306609, 0.25286222, -0.96743625, 5.7578177, 88.91049, -277.14102)
 
-[node name="Node" type="Node" parent="."]
+[node name="Node" type="Node" parent="." unique_id=924053255]
 script = SubResource("GDScript_uw00l")
 
-[node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="."]
+[node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="." unique_id=1909083691]
 visible = false
 material_override = SubResource("ShaderMaterial_tnp7i")
 multimesh = SubResource("MultiMesh_tnp7i")
 
-[node name="splat" type="MeshInstance3D" parent="."]
+[node name="splat" type="MeshInstance3D" parent="." unique_id=153790053]
 transform = Transform3D(-1.1117381, 1.509958e-07, 0, -1.6786778e-07, -1, 0, 0, 0, 1, -393.6268, 0, 0)
 visible = false
 material_override = SubResource("ShaderMaterial_tnp7i")
 mesh = SubResource("QuadMesh_tnp7i")
 
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="." unique_id=953085603]
 transform = Transform3D(100, 0, 0, 0, 100, 0, 0, 0, 100, 0, 0, 0)
 visible = false
 mesh = SubResource("BoxMesh_uw00l")
 
-[node name="rotations2D_GLTF" parent="." instance=ExtResource("3_ptdrs")]
+[node name="rotations2D_GLTF" parent="." unique_id=663464679 instance=ExtResource("3_ptdrs")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.774044, 176.64052, 430.87918)
 visible = false
 
 [node name="Mesh" parent="rotations2D_GLTF" index="0"]
 material_override = ExtResource("3_huo0t")
 
-[node name="MeshInstance3D3" type="MeshInstance3D" parent="."]
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="." unique_id=851379264]
 visible = false
 material_override = SubResource("ShaderMaterial_ptdrs")
 mesh = SubResource("QuadMesh_huo0t")
 
-[node name="gltf_with_grid_instanced_extra_colors" parent="." instance=ExtResource("5_tl0ik")]
+[node name="gltf_with_grid_instanced_extra_colors" parent="." unique_id=1645866305 instance=ExtResource("5_tl0ik")]
+transform = Transform3D(3.1331394, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [editable path="gltf_with_grid_instanced"]
 [editable path="rotations2D_GLTF"]
