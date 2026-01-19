@@ -280,7 +280,6 @@ void vertex() {
 	} 
 	else {
 		vec3 scale = exp(a_glob_scale);
-		//scale = vec3(10);
 
 		mat3 rotation_matrix = mat3(TANGENT, BINORMAL, NORMAL);
 		

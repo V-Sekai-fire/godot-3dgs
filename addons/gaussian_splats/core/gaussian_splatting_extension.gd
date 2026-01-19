@@ -182,7 +182,11 @@ func add_gaussian_surface(import_mesh: ImporterMesh, material: ShaderMaterial, g
 	print("Color len " + str((arrays[Mesh.ARRAY_COLOR])))
 	print("SH Coefficients " + str(gaussian_data["sh_coefficients"]))
 	
-	if gaussian_data["sh_coefficients"].size() > 1:
+	if gaussian_data["sh_coefficients"].size() == 1:
+		var dummy_sh : PackedVector4Array
+		dummy_sh.resize(gaussian_data["scales"].size())
+		arrays[Mesh.ARRAY_TEX_UV] = vec4array_to_vec2_uv_quads(gaussian_data["scales"], dummy_sh, 2)
+	else:
 		arrays[Mesh.ARRAY_TEX_UV] = vec4array_to_vec2_uv_quads(gaussian_data["scales"], gaussian_data["sh_coefficients"][4], 2)
 		arrays[Mesh.ARRAY_TEX_UV2] = vec4array_to_vec2_uv_quads(gaussian_data["sh_coefficients"][1], gaussian_data["sh_coefficients"][5], 2)
 		arrays[Mesh.ARRAY_CUSTOM0] = vec4array_pairs_to_half8_custom_quads(gaussian_data["sh_coefficients"][2], gaussian_data["sh_coefficients"][3], gaussian_data["sh_coefficients"][4]).to_float32_array()

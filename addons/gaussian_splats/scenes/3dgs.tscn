@@ -95,6 +95,7 @@ mesh = SubResource("QuadMesh_huo0t")
 transform = Transform3D(3.1331394, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 visible = false
 
-[node name="rotations2D_GLTF" parent="." unique_id=1759648225 instance=ExtResource("3_ptdrs")]
+[node name="rotations2D_GLTF" parent="." unique_id=2111195412 instance=ExtResource("3_ptdrs")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -131.44525, -137.87589, 0)
 
 [editable path="gltf_with_grid_instanced"]
