@@ -337,7 +337,9 @@ func vec4array_alpha_to_color_array_quads(array: PackedVector4Array, opacities: 
 	print("color alpha len " + str(len(array)) + " colors " + str(len(opacities)))
 	for vec in array:
 		var alpha: float = clampf(opacities[i].x, 0.0, 1.0)
+		print("vec: ", vec)
 		vec = vec * 0.28209479177 + 0.5 * Vector4.ONE
+		print("normalized vec: ", vec)
 		result.append(Color(vec.x, vec.y, vec.z, alpha))
 		result.append(Color(vec.x, vec.y, vec.z, alpha))
 		result.append(Color(vec.x, vec.y, vec.z, alpha))

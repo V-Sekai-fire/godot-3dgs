@@ -108,7 +108,7 @@ vec3 calculateSphericalHarmonics(vec3 coefficients[16], vec3 v) {
 	// Use `if` statements based on the uniform to conditionally add higher-order contributions.
 	if(u_sh_degree >= 1) {
 		float dx = v.x, dy = v.y, dz = v.z;
-		result += SH_C1 * dy *  coefficients[1];
+		result += SH_C1 * dy * coefficients[1];
 		result += SH_C1 * dz * coefficients[2];
 		result += SH_C1 * dx * coefficients[3];
 
@@ -280,6 +280,9 @@ void vertex() {
 	} 
 	else {
 		vec3 scale = exp(a_glob_scale);
+		
+		// Fix tiny splats blowing up. Unfortunately when the projected ellipse is tiny they still freak out.
+		scale = max(scale, 0.001);
 
 		mat3 rotation_matrix = mat3(TANGENT, BINORMAL, NORMAL);
 		
@@ -321,7 +324,8 @@ void vertex() {
 	
 	const float power_cutoff = -log(GAUSSIAN_VALUE_CUTOFF);
 	const float scale_up = sqrt(power_cutoff);
-	
+
+	// Scale the quad. This should not affect the splat size, only where it gets clipped.
 	UV *= scale_up;
 	QUAD_SIZE *= scale_up;
 

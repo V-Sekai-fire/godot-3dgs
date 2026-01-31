@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://2ohhmwno7h3c" path="res://addons/gaussian_splats/art/gltf_with_grid_instanced.glb" id="1_uw00l"]
 [ext_resource type="Shader" uid="uid://c00bpo3mxet1h" path="res://addons/gaussian_splats/core/shaders/splat_test.gdshader" id="2_huo0t"]
 [ext_resource type="PackedScene" uid="uid://dmsjkrhv0bc66" path="res://addons/gaussian_splats/art/rotations2D_GLTF.glb" id="3_ptdrs"]
+[ext_resource type="PackedScene" uid="uid://dywty70gfk81w" path="res://cactus_splat3_30kSteps_142k_splats.gltf" id="5_58erf"]
 [ext_resource type="PackedScene" uid="uid://vpucwc7uuf1s" path="res://addons/gaussian_splats/art/gltf_with_grid_instanced_extra_colors.glb" id="5_tl0ik"]
 
 [sub_resource type="GDScript" id="GDScript_uw00l"]
@@ -61,7 +62,7 @@ size = Vector2(2, 2)
 
 [node name="Scenes" type="Node3D" unique_id=1741955552]
 
-[node name="gltf_with_grid_instanced" parent="." unique_id=927108431 instance=ExtResource("1_uw00l")]
+[node name="gltf_with_grid_instanced" parent="." unique_id=1517647881 instance=ExtResource("1_uw00l")]
 visible = false
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1773469637]
@@ -98,5 +99,8 @@ visible = false
 
 [node name="rotations2D_GLTF" parent="." unique_id=53574096 instance=ExtResource("3_ptdrs")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -131.44525, -137.87589, 0)
+
+[node name="cactus_splat3_30kSteps_142k_splats" parent="." unique_id=1126836751 instance=ExtResource("5_58erf")]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, -218.14694, 156.96976, 328.07767)
 
 [editable path="gltf_with_grid_instanced"]
