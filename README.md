@@ -6,7 +6,7 @@ https://github.com/KhronosGroup/glTF/pull/2490
 
  - [x] Successfully packed degree 3 Spherical Harmonics into the Godot Engine vertex attributes
  - [ ] Debugging color reproduction
- - [ ] Hard coded focal length calculation
+ - [x] Hard coded focal length calculation
  - [ ] Missing sorting splats by distance for correct blending
 
 ## Features
